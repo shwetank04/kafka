@@ -1,0 +1,24 @@
+//Manage Kafka topics
+kafka-topics.sh 
+
+//This command connects to a remote Kafka cluster (cluster.playground.cdkt.io:9092) using a configuration file (playground.config) to perform topic-related operations (like listing, describing, creating topics, etc.).
+kafka-topics.sh --command-config playground.config --bootstrap-server cluster.playground.cdkt.io:9092
+
+//Creating topic
+kafka-topics.sh --bootstrap-server localhost:9092 --create --topic first_topic
+
+kafka-topics.sh --bootstrap-server localhost:9092 \
+  --create \
+  --topic first_topic \
+  --partitions 1 \
+  --replication-factor 1
+
+//List the topics
+kafka-topics.sh --bootstrap-server localhost:9092 --list
+
+//Describe command for a topic
+kafka-topics.sh --bootstrap-server localhost:9092 --topic first_topic --describe
+
+//Delete a topic
+kafka-topics.sh --bootstrap-server localhost:9092 --topic first_topic --delete
+

@@ -1,0 +1,119 @@
+//Sending Message from a Kafka producer
+
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic first_topic
+>Hello World
+>My name is Conduktor
+>I love Kafka
+>^C  (<- Ctrl + C is used to exit the producer)
+
+# producing with properties, acks all specify every msg should ack by all broker
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic first_topic --producer-property acks=all
+> some message that is acked
+> just for fun
+> fun learning!
+
+# producing to a non existing topic
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic new_topic
+> hello world!
+
+# our new topic only has 1 partition
+kafka-topics.sh --bootstrap-server localhost:9092 --list
+kafka-topics.sh --bootstrap-server localhost:9092 --topic new_topic --describe
+
+
+# edit config/server.properties or config/kraft/server.properties
+# num.partitions=3
+
+# produce against a non existing topic again
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic new_topic_2
+hello again!
+
+# this time our topic has 3 partitions
+kafka-topics.sh --bootstrap-server localhost:9092 --list
+kafka-topics.sh --bootstrap-server localhost:9092 --topic new_topic_2 --describe
+
+# produce with keys
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic first_topic --property parse.key=true --property key.separator=:
+>example key:example value
+>name:Stephane
+
+# create a topic with 3 partitions
+kafka-topics.sh --bootstrap-server localhost:9092 --topic second_topic --create --partitions 3
+
+# consuming
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic second_topic
+
+# other terminal
+kafka-console-producer.sh --bootstrap-server localhost:9092 --producer-property partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner --topic second_topic
+>hello world
+>shwetank
+
+# consuming from beginning
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic second_topic --from-beginning
+
+# display key, values and timestamp in consumer
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic second_topic --formatter kafka.tools.DefaultMessageFormatter --property print.timestamp=true --property print.key=true --property print.value=true --property print.partition=true --from-beginning
+
+
+# create a topic with 3 partitions
+kafka-topics.sh --bootstrap-server localhost:9092 --topic third_topic --create --partitions 3
+
+# start one consumer
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic third_topic --group my-first-application
+
+# start one producer and start producing
+kafka-console-producer.sh --bootstrap-server localhost:9092 --producer-property partitioner.class=org.apache.kafka.clients.producer.RoundRobinPartitioner --topic third_topic
+
+# start another consumer part of the same group. See messages being spread
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic third_topic --group my-first-application
+
+# start another consumer part of a different group from beginning
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic third_topic --group my-second-application --from-beginning
+
+# documentation for the command 
+kafka-consumer-groups.sh 
+
+# list consumer groups
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+ 
+# describe one specific group
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-second-application
+
+# describe another group
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-first-application
+
+# start a consumer
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic first_topic --group my-first-application
+
+# describe the group now
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-first-application
+
+# describe a console consumer group (change the end number)
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group console-consumer-10592
+
+# start a console consumer
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic first_topic --group my-first-application
+
+# describe the group again
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-first-application
+
+# look at the documentation again
+kafka-consumer-groups.sh
+
+# describe the consumer group
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-first-application
+
+# Dry Run: reset the offsets to the beginning of each partition
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group my-first-application --reset-offsets --to-earliest --topic third_topic --dry-run
+
+# execute flag is needed
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group my-first-application --reset-offsets --to-earliest --topic third_topic --execute
+
+# describe the consumer group again
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-first-application
+
+# consume from where the offsets have been reset
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic third_topic --group my-first-application
+
+# describe the group again
+kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group my-first-application
