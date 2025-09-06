@@ -6,15 +6,18 @@ import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.CooperativeStickyAssignor;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConsumerDemo {
-    public static final Logger log = LoggerFactory.getLogger(ConsumerDemo.class.getSimpleName());
+public class ConsumerCooperative {
 
-	
+    public static final Logger log = LoggerFactory.getLogger(ConsumerCooperative.class.getSimpleName());
+
+    
 	public void consume() {
 
 		//Create Consumer Properties
@@ -42,6 +45,7 @@ public class ConsumerDemo {
 		properties.setProperty("value.deserializer", StringDeserializer.class.getName());
         properties.setProperty("group.id", groupId);
         // properties.setProperty("auto.offset.reset", none/earliest/latest); Total 3 options
+        properties.setProperty("partition.assignment.strategy", CooperativeStickyAssignor.class.getName());
 
         //Start consuming from the beginning of the partition.
         properties.setProperty("auto.offset.reset", "earliest");
@@ -49,17 +53,46 @@ public class ConsumerDemo {
         //Create Consumer
         KafkaConsumer<String,String> consumer = new KafkaConsumer<>(properties);
 
+        //Get a reference to the main thread
+        final Thread mainThread = Thread.currentThread();
+
+        //Add a shutdown hook, this is called when application is stopped
+        Runtime.getRuntime().addShutdownHook(new Thread(){
+            public void run(){
+                log.info("Detected shutdown, lets exit by calling consumer.wakeup()");
+                consumer.wakeup(); //Trigger an exception on consumer while it is consuming
+
+                //Join the main thread to allow the execution of code in main thread
+                try {
+                    mainThread.join();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        try {
         //Subscribe to a topic
         consumer.subscribe(Arrays.asList(topic));
 
         //poll for data
         while(true) {
-            log.info("Polling");
-            ConsumerRecords<String,String> records = consumer.poll(Duration.ofMillis(1000));
+             ConsumerRecords<String,String> records = consumer.poll(Duration.ofMillis(1000));
 
             for(ConsumerRecord<String,String> record : records) {
                 log.info("Key: "+record.key()+ " "+"Value "+record.value());
             }
+            }
         }
-    }
+        catch(WakeupException e){
+            log.info("Consumer is starting to shutdown");
+        } catch(Exception e){
+            log.error("Unexpected exception");
+        }
+        finally{
+            consumer.close(); //close the consumer, this will also commit offset
+            log.info("The consumer is now gracefully shut down");
+        }
+    }   
 }
