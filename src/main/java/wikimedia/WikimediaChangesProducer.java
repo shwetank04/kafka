@@ -20,6 +20,13 @@ public class WikimediaChangesProducer {
         properties.setProperty("bootstrap.servers", "127.0.0.1:9092");
         properties.setProperty("key.serializer", StringSerializer.class.getName());
         properties.setProperty("value.serializer", StringSerializer.class.getName());
+        
+        //set safe producer config (kafka <=2.8)
+        properties.setProperty("enable.idempotence", "true");   // Enables idempotent producer (exactly-once within session)
+        properties.setProperty("acks", "all");                  // Leader + all in-sync replicas must ack
+        properties.setProperty("retries", Integer.toString(Integer.MAX_VALUE)); // Retry indefinitely
+
+
 
         KafkaProducer<String, String> kafkaProducer = new KafkaProducer<>(properties);
 
